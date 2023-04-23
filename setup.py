@@ -11,9 +11,9 @@ setup(
     author_email="diontimmernl@gmail.com",
     url="diontimmer.com",
     description="Shortcuts for hijacking libraries to support PySimpleGUI",
-    version=VERSION.get("__version__", "0.0.1"),
-    py_modules=["DTGUILib"],
-    packages=find_packages(where=".", exclude=["tests"]),
+    version=VERSION.get("__version__", "0.0.2"),
+    #py_modules=["./DTGUILib"],
+    packages=['DTGUILib'],
     install_requires=[
         "setuptools>=45.0",
         "PySimpleGUI",

@@ -1,123 +1,6 @@
 import PySimpleGUI as sg
-import os
-import pickle
 from threading import Thread
-import argparse
-import enum
-import ast
-
-# ****************************************************************************
-# *                                  Helpers                                 *
-# ****************************************************************************
-
-global_main_console = None
-
-def get_selected(tree):
-    tree = tree.widget
-    curItem = tree.focus()
-    return tree.item(curItem)
-
-def log(message, text_color='white', lvl='info'):
-    global global_main_console
-    if global_main_console is not None:
-        global_main_console.log(message, text_color=text_color, lvl=lvl)
-
-def get_console():
-    global global_main_console
-    return global_main_console
-
-def set_console(console):
-    global global_main_console
-    global_main_console = console
-
-def string2dict(dict_string):
-    return ast.literal_eval(dict_string)
-
-def load_settings(window, filename='saved.settings', not_load=['-CONSOLE-']):
-    if os.path.exists(filename):
-        with open(filename, 'rb') as f:
-            saved_settings = pickle.load(f)
-        for key in saved_settings:
-            if key not in not_load:
-                try:
-                    if not isinstance(window[key], sg.Button):
-                        window[key].update(value=saved_settings[key])
-                except (TypeError, KeyError) as e:
-                    print(e)
-                    pass
-        return saved_settings
-    else:
-        return None
-
-
-def save_settings(values):
-    with open('saved.settings', 'wb') as f:
-        pickle.dump(values, f)
-
-def str2type(string):
-    # check if string type
-    if not isinstance(string, str):
-        return string
-    teststring =  string.replace('-', '')
-    if teststring.isnumeric():
-        return int(string)
-    elif teststring.replace('.', '', 1).isdigit():  # check if v is a floating-point number
-        return float(string)
-    elif teststring.lower() in ['true', 'yes', 'y']:
-        return True
-    elif teststring.lower() in ['false', 'no', 'n']:
-        return False
-    else:
-        return string
-
-
-#Hijacks tqdm to insert your own function
-def hijack_tqdm(callback, auto=True):
-    if auto:
-        from tqdm.auto import tqdm
-    else:
-        from tqdm import tqdm
-    orig_func = getattr(tqdm, "update")
-    def wrapped_func(*args, **kwargs):
-        pbar = args[0]
-        v = orig_func(*args, **kwargs)
-        callback({"value": pbar.n, "max": pbar.total})            
-        return v
-    setattr(tqdm, "update", wrapped_func)
-
-def hijack_tqdm_progbar(prog_bar, auto):
-    hijack_tqdm(lambda args: prog_bar.update(current_count=args['value'], max=args['max']), auto=auto)
-
-
-def hijack_argparse(main_func, override_args):
-    nw_args = argparse.Namespace()
-    for k, v in override_args.items():
-        if v != '':
-            setattr(nw_args, k.replace('--', ''), str2type(v))
-
-    def do_hj_argparse(*args, **kwargs):
-        defaults = args[0].parse_known_args()[0]
-        defaults_dict = vars(defaults)
-        new_args_dict = vars(nw_args)
-
-        enum_dict = {}
-
-        for key in vars(defaults):
-            arg_class = vars(defaults)[key]
-            if isinstance(arg_class, enum.Enum):
-                enum_dict[key] = arg_class.__class__
-
-        for key in new_args_dict:
-            if key in enum_dict:
-                detected_enum = enum_dict[key]
-                new_args_dict[key] = getattr(detected_enum, new_args_dict[key])
-
-        hijacked_args_dict = {**defaults_dict, **new_args_dict}
-        hijacked_args = argparse.Namespace(**hijacked_args_dict)
-        return hijacked_args
-
-    argparse.ArgumentParser.parse_args = do_hj_argparse
-    main_func()
+import DTGUILib.current_gui as dtcurrent
 
 # ****************************************************************************
 # *                                 Elements                                 *
@@ -174,8 +57,7 @@ class SplashScreen():
 
 class ConsoleClass(sg.Multiline):
     def __init__(self, main_console=True, route_err=True, size=(10,15), expand_x=True, *args, **kwargs):
-        global global_main_console
-        global_main_console = self if main_console else global_main_console
+        dtcurrent.current_console = self if main_console else dtcurrent.current_console
         super().__init__(reroute_stderr=route_err, size=size, expand_x=expand_x, autoscroll=True, write_only=True, disabled=True, auto_refresh=True, reroute_cprint=True, key='-CONSOLE-', *args, **kwargs)
 
     def log(self, *args, **kwargs):
@@ -279,6 +161,56 @@ class TreeData(sg.TreeData):
             node_list = temp
     
         return True
+
+# themes
+
+sg.theme_add_new(
+    'DTGUI_PINK', 
+    {
+        'BACKGROUND': '#242834', 
+        'TEXT': '#f9dff9', 
+        'INPUT': '#de1b73', 
+        'TEXT_INPUT': '#FFFFFF', 
+        'SCROLL': '#a9afbb', 
+        'BUTTON': ('#FFFFFF', '#de1b73'), 
+        'PROGRESS': ('#31ff0d', '#5b9760'), 
+        'BORDER': 1, 
+        'SLIDER_DEPTH': 0, 
+        'PROGRESS_DEPTH': 0, 
+    }
+)
+
+sg.theme_add_new(
+    'DTGUI_BLUE', 
+    {
+        'BACKGROUND': '#242834', 
+        'TEXT': '#def3fa', 
+        'INPUT': '#1a7cdf', 
+        'TEXT_INPUT': '#FFFFFF', 
+        'SCROLL': '#a9afbb', 
+        'BUTTON': ('#FFFFFF', '#1b69de'), 
+        'PROGRESS': ('#31ff0d', '#5b9760'), 
+        'BORDER': 1, 
+        'SLIDER_DEPTH': 0, 
+        'PROGRESS_DEPTH': 0, 
+    }
+)
+
+sg.theme_add_new(
+    'DTGUI_GREEN', 
+    {
+        'BACKGROUND': '#242834', 
+        'TEXT': '#defaed', 
+        'INPUT': '#11bb73', 
+        'TEXT_INPUT': '#FFFFFF', 
+        'SCROLL': '#a9afbb', 
+        'BUTTON': ('#FFFFFF', '#1aa268'), 
+        'PROGRESS': ('#31ff0d', '#5b9760'), 
+        'BORDER': 1, 
+        'SLIDER_DEPTH': 0, 
+        'PROGRESS_DEPTH': 0, 
+    }
+)
 
 
 
