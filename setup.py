@@ -15,7 +15,7 @@ setup(
     #py_modules=["./DTGUILib"],
     packages=['DTGUILib'],
     install_requires=[
-        "setuptools>=45.0",
+        "setuptools",
         "PySimpleGUI",
     ],
     classifiers=[
